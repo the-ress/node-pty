@@ -11,6 +11,7 @@ import { WindowsPtyAgent } from './windowsPtyAgent';
 import { IPtyForkOptions, IPtyOpenOptions } from './interfaces';
 import { ArgvOrCommandLine } from './types';
 import { assign } from './utils';
+import { getProcessInfo, ProcessInfo } from 'windows-process-info';
 
 const DEFAULT_FILE = 'cmd.exe';
 const DEFAULT_NAME = 'Windows Shell';
@@ -151,14 +152,6 @@ export class WindowsTerminal extends Terminal {
     });
   }
 
-  public getProcessList(): number[] {
-    if (this._isReady) {
-      return this._agent.getConsoleProcessList();
-    };
-
-    return null;
-  }
-
   public destroy(): void {
     this._defer(() => {
       this.kill();
@@ -194,7 +187,32 @@ export class WindowsTerminal extends Terminal {
     });
   }
 
-  public get process(): string { return this._name; }
+  public get process(): string {
+    if (!this._isReady) {
+      return this._file;
+    };
+
+    const pids = this._agent.getConsoleProcessList();
+    const processes = getProcessInfo(pids);
+
+    const processMap: { [pid: number]: ProcessInfo; } = {};
+    const children: { [pid: number]: number[]; } = {};
+
+    processes.forEach(p => processMap[p.processId] = p);
+    processes.forEach(p => children[p.processId] = []);
+
+    processes.forEach(p => children[p.parentId] && children[p.parentId].push(p.processId));
+
+    let pid = this._pid;
+    while (children[pid].length !== 0) {
+      pid = children[pid].reduce(function (prev, current) {
+        return (prev && processMap[prev].startTime > processMap[current].startTime) ? prev : current;
+      }, null);
+    }
+
+    return processMap[pid] ? processMap[pid].name : this._file;
+  }
+
   public get master(): Socket { throw new Error('master is not supported on Windows'); }
   public get slave(): Socket { throw new Error('slave is not supported on Windows'); }
 }
