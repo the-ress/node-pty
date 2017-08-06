@@ -83,6 +83,10 @@ export class WindowsPtyAgent {
     pty.resize(this._pid, cols, rows);
   }
 
+  public getConsoleProcessList(): number[] {
+    return pty.getConsoleProcessList(this._pid);
+  }
+
   public kill(): void {
     this._inSocket.readable = false;
     this._inSocket.writable = false;

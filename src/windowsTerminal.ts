@@ -151,6 +151,14 @@ export class WindowsTerminal extends Terminal {
     });
   }
 
+  public getProcessList(): number[] {
+    if (this._isReady) {
+      return this._agent.getConsoleProcessList();
+    };
+
+    return null;
+  }
+
   public destroy(): void {
     this._defer(() => {
       this.kill();

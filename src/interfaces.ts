@@ -42,6 +42,11 @@ export interface ITerminal {
   resize(cols: number, rows: number): void;
 
   /**
+   * Get list of processes attached to console.
+   */
+  getProcessList(): number[];
+
+  /**
    * Close, kill and destroy the socket.
    */
   destroy(): void;

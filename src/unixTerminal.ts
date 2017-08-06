@@ -235,6 +235,10 @@ export class UnixTerminal extends Terminal {
     pty.resize(this._fd, cols, rows);
   }
 
+  public getProcessList(): number[] {
+    return null;
+  }
+
   private _sanitizeEnv(env: ProcessEnv): void {
       // Make sure we didn't start our server from inside tmux.
       delete env['TMUX'];

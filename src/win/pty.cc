@@ -243,6 +243,45 @@ static NAN_METHOD(PtyResize) {
   return info.GetReturnValue().SetUndefined();
 }
 
+/*
+* PtyGetConsoleProcessList
+* pty.getConsoleProcessList(pid);
+*/
+static NAN_METHOD(PtyGetConsoleProcessList) {
+  Nan::HandleScope scope;
+
+  if (info.Length() != 1
+    || !info[0]->IsNumber()) // pid
+  {
+    Nan::ThrowError("Usage: pty.getConsoleProcessList(pid)");
+    return;
+  }
+
+  int handle = info[0]->Int32Value();
+
+  winpty_t *pc = get_pipe_handle(handle);
+
+  assert(pc != nullptr);
+
+  auto processList = std::vector<int>(64);
+  auto processCount = winpty_get_console_process_list(pc, &processList[0], processList.size(), nullptr);
+  if (processList.size() < processCount)
+  {
+    processList.resize(processCount);
+    processCount = winpty_get_console_process_list(pc, &processList[0], processList.size(), nullptr);
+  }
+
+  assert(processCount != 0);
+
+  auto result = Nan::New<v8::Array>(processCount);
+  for (auto i = 0; i < processCount; i++)
+  {
+    Nan::Set(result, i, Nan::New<v8::Number>(processList[i]));
+  }
+
+  return info.GetReturnValue().Set(result);
+}
+
 static NAN_METHOD(PtyKill) {
   Nan::HandleScope scope;
 
@@ -273,6 +312,7 @@ extern "C" void init(v8::Handle<v8::Object> target) {
   Nan::HandleScope scope;
   Nan::SetMethod(target, "startProcess", PtyStartProcess);
   Nan::SetMethod(target, "resize", PtyResize);
+  Nan::SetMethod(target, "getConsoleProcessList", PtyGetConsoleProcessList);
   Nan::SetMethod(target, "kill", PtyKill);
   Nan::SetMethod(target, "getExitCode", PtyGetExitCode);
 };
